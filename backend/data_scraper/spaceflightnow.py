@@ -1,43 +1,46 @@
 import requests
 from bs4 import BeautifulSoup
 
+SPACE_FLIGHT_NOW_LAUNCH_SCHEDULE_URL = 'https://spaceflightnow.com/launch-schedule/'
 
-def spaceflightnow():
-    url = 'https://spaceflightnow.com/launch-schedule/'
-    request = requests.get(url)
-    data_list = []
-    status_code = request.status_code
-    if (status_code != 200):
-        return data_list
-    else:
-        page_content = requests.get(url).content
 
-        css_tags = ['datename', 'missiondata' ,'missdescrip']
+def generate_missions_payload(missions, mission_data):
+    payload = []
+    for index, mission in enumerate(missions):
+        launch_date = mission.find('span', attrs={'class': 'launchdate'}).text.strip()
+        mission_summary = mission.find('span', attrs={'class': 'mission'}).text.strip().split('•')
+        mission_details = mission_data[index].contents
 
-        soup = BeautifulSoup(page_content, 'html.parser')
-        schedule_box = soup.find('div', attrs={'class': 'entry-content clearfix'})
+        payload.append({
+            'launch_date': launch_date,
+            'rocket': mission_summary[0],
+            'mission': mission_summary[1],
+            'launch_time': mission_details[1].strip(),
+            'launch_site': mission_details[3].strip()
+        })
 
-        datename_data = schedule_box.find_all('div', attrs={'class': 'datename'})
-        missiondata_data = schedule_box.find_all('div', attrs={'class': 'missiondata'})
-        missdescrip_data = schedule_box.find_all('div', attrs={'class': 'missdescrip'})
+    return payload
 
-        for index, value in enumerate(datename_data):
-            launch_date = datename_data[index].find('span', attrs={'class': 'launchdate'}).text.strip()
-            mission_str = datename_data[index].find('span', attrs={'class': 'mission'}).text.strip()
-            mission_str_parts = mission_str.split('•')
-            rocket = mission_str_parts[0].strip()
-            mission = mission_str_parts[1].strip()
-            launch_time_site_contents = missiondata_data[index].contents
-            launch_time = launch_time_site_contents[1].strip()
-            launch_site = launch_time_site_contents[3].strip()
-            
-            data_list.append({
-                'launch_date': launch_date,
-                'mission': mission,
-                'rocket': rocket,
-                'mission': mission,
-                'launch_time': launch_time,
-                'launch_site': launch_site
-                })
-        
-        return data_list
+
+def scrape_space_flight_now():
+    '''
+    Scrapes the space flight now website and returns a list of missions
+    :return: list of mission objects
+    :rtype: list
+    '''
+    launch_page_request = requests.get(SPACE_FLIGHT_NOW_LAUNCH_SCHEDULE_URL)
+
+    if (launch_page_request.status_code != 200):
+        print('Error with status {status} encountered while retrieving latest launch data'.format(
+            status=launch_page_request.status_code))
+        return []
+
+    launch_page = BeautifulSoup(launch_page_request.content, 'html.parser')
+    launch_page_details_section = launch_page.find('div', attrs={'class': 'entry-content clearfix'})
+    missions = launch_page_details_section.find_all('div', attrs={'class': 'datename'})
+    mission_data = launch_page_details_section.find_all('div', attrs={'class': 'missiondata'})
+
+    return generate_missions_payload(missions, mission_data)
+
+
+print(scrape_space_flight_now())
