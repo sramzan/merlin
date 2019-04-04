@@ -4,7 +4,14 @@ from bs4 import BeautifulSoup
 SPACE_FLIGHT_NOW_LAUNCH_SCHEDULE_URL = 'https://spaceflightnow.com/launch-schedule/'
 
 
-def generate_missions_payload(missions, mission_data):
+def missions_payload(missions, mission_data):
+    '''
+    Creates a payload based on the missions and respective mission data
+    :param list missions: The missions found on a page
+    :param list mission_data: The missions data for each mission. The index of the mission should correspond to mission data
+    :return: list of mission objects
+    :rtype: list
+    '''
     payload = []
     for index, mission in enumerate(missions):
         launch_date = mission.find('span', attrs={'class': 'launchdate'}).text.strip()
@@ -25,7 +32,7 @@ def generate_missions_payload(missions, mission_data):
 def scrape_space_flight_now():
     '''
     Scrapes the space flight now website and returns a list of missions
-    :return: list of mission objects
+    :return: list of missions found on space flight now's launch schedule
     :rtype: list
     '''
     launch_page_request = requests.get(SPACE_FLIGHT_NOW_LAUNCH_SCHEDULE_URL)
@@ -40,4 +47,4 @@ def scrape_space_flight_now():
     missions = launch_page_details_section.find_all('div', attrs={'class': 'datename'})
     mission_data = launch_page_details_section.find_all('div', attrs={'class': 'missiondata'})
 
-    return generate_missions_payload(missions, mission_data)
+    return missions_payload(missions, mission_data)
