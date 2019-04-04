@@ -41,6 +41,3 @@ def scrape_space_flight_now():
     mission_data = launch_page_details_section.find_all('div', attrs={'class': 'missiondata'})
 
     return generate_missions_payload(missions, mission_data)
-
-
-print(scrape_space_flight_now())
